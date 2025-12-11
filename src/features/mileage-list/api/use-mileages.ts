@@ -51,6 +51,19 @@ export function useMileages() {
     }
   };
 
+  const importFromCSV = async (file: File): Promise<{ success: number; errors: string[] }> => {
+    try {
+      const text = await file.text();
+      const result = await appService.importFromCSV(text);
+      await fetchMileages(); // Refresh the list
+      return result;
+    } catch (err) {
+      setError('Failed to import data');
+      console.error(err);
+      return { success: 0, errors: [err instanceof Error ? err.message : 'Unknown error'] };
+    }
+  };
+
   useEffect(() => {
     fetchMileages();
   }, []);
@@ -63,5 +76,6 @@ export function useMileages() {
     deleteMileage,
     clearAllData,
     exportToCSV,
+    importFromCSV,
   };
 }

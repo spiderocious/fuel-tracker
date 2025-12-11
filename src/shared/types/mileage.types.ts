@@ -8,9 +8,13 @@ export interface MileageLog {
   // Enhanced fuel tracking
   fuelPricePerLiter?: number;
   fuelLiters?: number;
+  fillingStation?: string; // Name of gas station
   // Car display data
   carRangeEstimate?: number; // Distance to empty shown by car (miles)
   carTankAverage?: number; // MPG shown by car
+  // Additional info
+  notes?: string; // General notes
+  tripKilometers?: number; // Trip distance in km (stored for reference)
 }
 
 export interface MileageAnalytics {

@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { FaDownload, FaTrash, FaGasPump, FaTachometerAlt, FaCalendar } from 'react-icons/fa';
+import { useState, useRef } from 'react';
+import { FaDownload, FaUpload, FaTrash, FaGasPump, FaTachometerAlt, FaCalendar } from 'react-icons/fa';
 import { Card } from '@web/ui/components/Card';
 import { Button } from '@web/ui/components/Button';
 import { useMileages } from '../api/use-mileages';
 import { formatCurrency, formatDate } from '@web/shared/helpers/format';
 
 export function MileageListScreen() {
-  const { mileages, loading, error, deleteMileage, clearAllData, exportToCSV } = useMileages();
+  const { mileages, loading, error, deleteMileage, clearAllData, exportToCSV, importFromCSV } = useMileages();
   const [showConfirmClear, setShowConfirmClear] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: number; errors: string[] } | null>(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearAll = async () => {
     await clearAllData();
@@ -17,6 +20,36 @@ export function MileageListScreen() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this log?')) {
       await deleteMileage(id);
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      setImportResult({ success: 0, errors: ['Please select a valid CSV file'] });
+      return;
+    }
+
+    setImporting(true);
+    setImportResult(null);
+
+    try {
+      const result = await importFromCSV(file);
+      setImportResult(result);
+    } catch (err) {
+      setImportResult({ success: 0, errors: [err instanceof Error ? err.message : 'Unknown error'] });
+    } finally {
+      setImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -38,7 +71,32 @@ export function MileageListScreen() {
           <h2 className="text-3xl font-bold text-gray-900">Mileage Logs</h2>
           <p className="text-gray-600 mt-1">View and manage your mileage entries</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".csv"
+            className="hidden"
+          />
+          <Button
+            onClick={handleImportClick}
+            variant="secondary"
+            disabled={importing}
+            className="flex items-center gap-2"
+          >
+            {importing ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                <span>Importing...</span>
+              </>
+            ) : (
+              <>
+                <FaUpload />
+                <span>Import CSV</span>
+              </>
+            )}
+          </Button>
           <Button onClick={exportToCSV} variant="secondary" className="flex items-center gap-2">
             <FaDownload />
             <span>Export CSV</span>
@@ -49,6 +107,44 @@ export function MileageListScreen() {
           </Button>
         </div>
       </div>
+
+      {importResult && (
+        <div className={`mb-6 p-4 rounded-lg border ${
+          importResult.success > 0 && importResult.errors.length === 0
+            ? 'bg-green-50 border-green-200'
+            : importResult.success > 0
+            ? 'bg-yellow-50 border-yellow-200'
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              {importResult.success > 0 && (
+                <p className="text-green-700 font-medium mb-2">
+                  Successfully imported {importResult.success} log{importResult.success !== 1 ? 's' : ''}
+                </p>
+              )}
+              {importResult.errors.length > 0 && (
+                <div>
+                  <p className="text-red-700 font-medium mb-2">
+                    {importResult.errors.length} error{importResult.errors.length !== 1 ? 's' : ''} occurred:
+                  </p>
+                  <ul className="text-sm text-red-600 list-disc list-inside max-h-40 overflow-y-auto">
+                    {importResult.errors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setImportResult(null)}
+              className="text-gray-500 hover:text-gray-700 ml-4"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">

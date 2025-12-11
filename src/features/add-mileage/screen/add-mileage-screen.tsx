@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaTachometerAlt, FaGasPump, FaCar } from 'react-icons/fa';
+import { FaPlus, FaTachometerAlt, FaGasPump, FaCar, FaRoute, FaStickyNote } from 'react-icons/fa';
 import { Card } from '@web/ui/components/Card';
 import { Button } from '@web/ui/components/Button';
 import { Input } from '@web/ui/components/Input';
@@ -20,8 +20,12 @@ export function AddMileageScreen() {
     fuelAmount: '',
     fuelPricePerLiter: '',
     fuelLiters: '',
+    fillingStation: '',
     carRangeEstimate: '',
     carTankAverage: '',
+    tookTrip: false,
+    tripKilometers: '',
+    notes: '',
   });
 
   const validateForm = (): boolean => {
@@ -64,6 +68,10 @@ export function AddMileageScreen() {
       newErrors.carTankAverage = 'Tank average must be greater than 0';
     }
 
+    if (formData.tookTrip && formData.tripKilometers && Number(formData.tripKilometers) <= 0) {
+      newErrors.tripKilometers = 'Trip distance must be greater than 0';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -92,8 +100,11 @@ export function AddMileageScreen() {
         fuelAmount: calculatedAmount,
         fuelPricePerLiter: formData.fuelPricePerLiter ? Number(formData.fuelPricePerLiter) : undefined,
         fuelLiters: formData.fuelLiters ? Number(formData.fuelLiters) : undefined,
+        fillingStation: formData.fillingStation || undefined,
         carRangeEstimate: formData.carRangeEstimate ? Number(formData.carRangeEstimate) : undefined,
         carTankAverage: formData.carTankAverage ? Number(formData.carTankAverage) : undefined,
+        tripKilometers: formData.tripKilometers ? Number(formData.tripKilometers) : undefined,
+        notes: formData.notes || undefined,
       });
 
       setSuccessMessage('Mileage log added successfully!');
@@ -105,8 +116,12 @@ export function AddMileageScreen() {
         fuelAmount: '',
         fuelPricePerLiter: '',
         fuelLiters: '',
+        fillingStation: '',
         carRangeEstimate: '',
         carTankAverage: '',
+        tookTrip: false,
+        tripKilometers: '',
+        notes: '',
       });
       setErrors({});
 
@@ -192,6 +207,15 @@ export function AddMileageScreen() {
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
               <h3 className="font-semibold text-blue-900">Fuel Purchase Details</h3>
 
+              <Input
+                type="text"
+                label="Filling Station (Optional)"
+                placeholder="e.g., Shell, Total, etc."
+                value={formData.fillingStation}
+                onChange={(e) => setFormData({ ...formData, fillingStation: e.target.value })}
+                error={errors.fillingStation}
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   type="number"
@@ -261,6 +285,56 @@ export function AddMileageScreen() {
             <div className="mt-2 text-sm text-gray-500">
               Enter the values shown on your car's display (distance to empty and average MPG)
             </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <label className="flex items-center gap-3 cursor-pointer mb-4">
+              <input
+                type="checkbox"
+                checked={formData.tookTrip}
+                onChange={(e) => setFormData({ ...formData, tookTrip: e.target.checked })}
+                className="w-5 h-5 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <span className="font-medium text-gray-900 flex items-center gap-2">
+                <FaRoute className="text-gray-600" />
+                Took a trip?
+              </span>
+            </label>
+
+            {formData.tookTrip && (
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <Input
+                  type="number"
+                  label="Trip Distance (km)"
+                  placeholder="e.g., 50"
+                  step="0.1"
+                  value={formData.tripKilometers}
+                  onChange={(e) => setFormData({ ...formData, tripKilometers: e.target.value })}
+                  error={errors.tripKilometers}
+                />
+                <div className="mt-2 text-sm text-purple-700">
+                  Enter the trip distance in kilometers (will be stored for reference)
+                  {formData.tripKilometers && (
+                    <p className="mt-1">≈ {(Number(formData.tripKilometers) * 0.621371).toFixed(2)} miles</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-6">
+            <label htmlFor="notes" className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <FaStickyNote className="text-gray-600" />
+              Notes (Optional)
+            </label>
+            <textarea
+              id="notes"
+              rows={3}
+              placeholder="Add any notes about this log entry..."
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
