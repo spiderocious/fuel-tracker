@@ -186,20 +186,31 @@ class AppService {
       'Trip Kilometers',
       'Notes'
     ];
-    const rows = logs.map(log => [
-      new Date(log.timestamp).toLocaleString(),
-      log.currentReading.toString(),
-      log.fuelGauge.toString(),
-      log.justBoughtFuel ? 'Yes' : 'No',
-      log.fuelAmount?.toString() ?? 'N/A',
-      log.fuelPricePerLiter?.toString() ?? 'N/A',
-      log.fuelLiters?.toString() ?? 'N/A',
-      log.fillingStation ?? 'N/A',
-      log.carRangeEstimate?.toString() ?? 'N/A',
-      log.carTankAverage?.toString() ?? 'N/A',
-      log.tripKilometers?.toString() ?? 'N/A',
-      log.notes ? `"${log.notes.replace(/"/g, '""')}"` : 'N/A', // Escape quotes in notes
-    ]);
+    const rows = logs.map(log => {
+      // Helper to escape CSV values
+      const escapeCSV = (value: string) => {
+        // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+        if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      };
+
+      return [
+        escapeCSV(new Date(log.timestamp).toLocaleString()),
+        log.currentReading.toString(),
+        log.fuelGauge.toString(),
+        log.justBoughtFuel ? 'Yes' : 'No',
+        log.fuelAmount?.toString() ?? 'N/A',
+        log.fuelPricePerLiter?.toString() ?? 'N/A',
+        log.fuelLiters?.toString() ?? 'N/A',
+        escapeCSV(log.fillingStation ?? 'N/A'),
+        log.carRangeEstimate?.toString() ?? 'N/A',
+        log.carTankAverage?.toString() ?? 'N/A',
+        log.tripKilometers?.toString() ?? 'N/A',
+        escapeCSV(log.notes ?? 'N/A'),
+      ];
+    });
 
     const csvContent = [
       headers.join(','),
